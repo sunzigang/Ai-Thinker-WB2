@@ -254,23 +254,6 @@ void ai_https_update_ota(void *param)
         len = writelen;
     }
 
-    // axk_at_ota_export(AT_OTA_STATE_GET_VERSION);
-
-    //off固件头部偏移地址
-    int off = parse_ai_pack_head(recv_buf, ret, &pack_head_t);
-    memset(recv_buf, 0, off);
-    len -= off;
-    if (len < 0) {
-        printf("invalid len\r\n");
-        goto exit;
-    }
-    memcpy(recv_buf, recv_buf+off, len);
-    mbedtls_md5_update(&md5_ctx, recv_buf, len);
-
-    //擦除flash,4kb对齐
-    if(-1 == ota_parame_t->erase_cb(0, (rsp_result.body_len/4096+1)*4096)){
-        goto exit;
-    }
     //写flash
     if(-1 == ota_parame_t->write_cb(start_pos, recv_buf, len)){
         goto exit;
@@ -472,10 +455,12 @@ void ai_http_update_ota(void *param)
 			read_bytes = read(fd, recv_buf + HEADER_BAK_LEN, (BUF_SIZE - HEADER_BAK_LEN));
 			if(read_bytes <= 0){
 				printf("read socket failed\r\n");
+                ota_parame_t->result_cb("read socket failed");
 				goto exit;
 			}
             idx = read_bytes + HEADER_BAK_LEN;
 			if (ai_parse_http_response(recv_buf, read_bytes + HEADER_BAK_LEN, &rsp_result) == -1){
+                ota_parame_t->result_cb("http parse failed");
 				goto exit;
 			}
 		}
@@ -484,6 +469,7 @@ void ai_http_update_ota(void *param)
     if(0 == rsp_result.body_len)
     {
         printf("New firmware size = 0\r\n");
+        ota_parame_t->result_cb("New firmware size = 0");
         goto exit;
     }else{
         printf("Download new firmware begin, total size : %d\n", (int)rsp_result.body_len);
@@ -501,6 +487,7 @@ void ai_http_update_ota(void *param)
         read_bytes = recv(fd, recv_buf, BUF_SIZE, 0);
         if(read_bytes <= 0){
             printf("recv ota data failed\r\n");
+            ota_parame_t->result_cb("recv ota data failed");
             goto exit;
         }
         len = read_bytes;
@@ -519,10 +506,12 @@ void ai_http_update_ota(void *param)
 
     //擦除flash,4kb对齐
     if(-1 == ota_parame_t->erase_cb(0, (rsp_result.body_len/4096+1)*4096)){
+        ota_parame_t->result_cb("erase flash failed");
         goto exit;
     }
     //写flash
     if(-1 == ota_parame_t->write_cb(start_pos, recv_buf, len)){
+        ota_parame_t->result_cb("write flash failed");
         goto exit;
     }
     int writeTopos = start_pos + len;
@@ -534,6 +523,7 @@ void ai_http_update_ota(void *param)
         if(read_bytes == 0) break;
         if(read_bytes < 0){
             printf("read socket failed\r\n");
+            ota_parame_t->result_cb("read socket failed");
             goto exit;
         }
         len = read_bytes;
@@ -552,9 +542,13 @@ void ai_http_update_ota(void *param)
         ota_parame_t->set_boot_partition_cb();
     }else{
         printf("MD5 verify failed\r\n");
+        ota_parame_t->result_cb("MD5 verify failed");
+
         goto exit;
     }
     printf("OTA Success\r\n");
+    ota_parame_t->result_cb("finish");
+
     ota_parame_t->rebooot_cb(true);
 exit:
     printf("OTA Failed\r\n");

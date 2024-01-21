@@ -15,6 +15,7 @@ typedef int (*f_write)(int dst_offset, const void *src,int size);
 // typedef void (*f_read)(void *stream, int len, void *buf);
 typedef int (*f_erase)(int start_addr, int size);
 typedef void (*f_partition)(void);
+typedef void (*f_result)(const char* result);
 typedef void (*f_reboot)(_Bool ota_result);
 
 typedef struct {
@@ -63,6 +64,7 @@ typedef struct{
     f_write write_cb;                           //写flash回调
     f_erase erase_cb;                           //擦除flash回调
     f_partition set_boot_partition_cb;          //设置boot启动分区回调
+    f_result  result_cb;
     f_reboot rebooot_cb;                        //重启回调
 }ota_parame;
 
