@@ -9,6 +9,11 @@
 #include "blufi.h"
 #include "ble_interface.h"
 
+#include "gatt.h"
+#include "conn.h"
+#include "conn_internal.h"
+#include "hci_core.h"
+ 
 extern blufi_config_t g_blufi_config;
 void axk_blufi_adv_start(void)
 {
@@ -18,6 +23,10 @@ void axk_blufi_adv_start(void)
     uint8_t rsp_data[37] = {0};
     ble_adv_data_t data = {0};
     ble_adv_param_t adv_param = {0};
+
+    bt_addr_le_t bt_addr;
+    bt_get_local_public_address(&bt_addr);
+
     adv_param.adv_int_max = 180;
     adv_param.adv_int_min = 180;
     adv_param.channel_map = 7;
@@ -50,6 +59,11 @@ void axk_blufi_adv_start(void)
     adv_data[offect++] = 0x03;
     adv_data[offect++] = 0xFF;
     adv_data[offect++] = 0xFF;
+
+    adv_data[offect++] = 7;
+    adv_data[offect++] = 0xff;
+    for(int i=0;i<6;i++)
+        adv_data[offect++] =bt_addr.a.val[i];
 
     memcpy(data.data, adv_data, offect);
     memcpy(data.rsp_data, rsp_data, blufiname_len + 2);
