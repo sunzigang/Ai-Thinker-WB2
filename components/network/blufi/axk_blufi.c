@@ -63,7 +63,7 @@ void axk_blufi_adv_start(void)
     adv_data[offect++] = 7;
     adv_data[offect++] = 0xff;
     for(int i=0;i<6;i++)
-        adv_data[offect++] =bt_addr.a.val[i];
+        adv_data[offect++] =bt_addr.a.val[5-i];
 
     memcpy(data.data, adv_data, offect);
     memcpy(data.rsp_data, rsp_data, blufiname_len + 2);
